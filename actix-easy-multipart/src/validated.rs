@@ -40,8 +40,7 @@ use validator::{Validate, ValidationErrors};
 /// # use actix_easy_multipart::validated::MultipartForm;
 ///
 /// async fn route(form: MultipartForm<Upload>) -> impl Responder {
-///     let img_bytes = std::fs::read(form.image.file.path()).unwrap();
-///     format!("Received image of size: {}", img_bytes.len())
+///     format!("Received image of size: {}", form.image.size)
 /// }
 /// # }
 /// ```
