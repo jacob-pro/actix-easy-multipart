@@ -68,6 +68,7 @@ dependencies = [
  "serde_urlencoded",
  "tempfile",
  "thiserror",
+ "tokio",
  "validator",
  "validator_derive",
 ]

@@ -1,12 +1,13 @@
 use crate::{MultipartField, MultipartFile, MultipartText, Multiparts};
 use actix_multipart::MultipartError;
-use actix_web::error::{BlockingError, ParseError, PayloadError};
+use actix_web::error::{ParseError, PayloadError};
 use actix_web::http::header;
 use actix_web::http::header::DispositionType;
-use actix_web::web::{self, BytesMut};
-use futures::{StreamExt, TryFutureExt, TryStreamExt};
-use std::io::Write;
+use actix_web::web::BytesMut;
+use futures::{StreamExt, TryStreamExt};
 use tempfile::NamedTempFile;
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
 
 pub const DEFAULT_TEXT_LIMIT: usize = 1024 * 1024;
 pub const DEFAULT_FILE_LIMIT: u64 = 512 * 1024 * 1024;
@@ -96,32 +97,31 @@ async fn create_file(
 ) -> Result<MultipartFile, MultipartError> {
     let mut written = 0;
     let mut budget = max_size;
-    let mut ntf = match NamedTempFile::new() {
+    let ntf = match NamedTempFile::new() {
         Ok(file) => file,
         Err(e) => return Err(MultipartError::Payload(PayloadError::Io(e))),
     };
-
+    let mut async_file = File::from_std(
+        ntf.reopen()
+            .map_err(|e| MultipartError::Payload(PayloadError::Io(e)))?,
+    );
     while let Some(chunk) = field.next().await {
         let bytes = chunk?;
         let length = bytes.len() as u64;
         if budget < length {
             return Err(MultipartError::Payload(PayloadError::Overflow));
         }
-        ntf = web::block(move || {
-            ntf.as_file()
-                .write_all(bytes.as_ref())
-                .map(|_| ntf)
-                .map_err(|e| MultipartError::Payload(PayloadError::Io(e)))
-        })
-        .map_err(|e: BlockingError<MultipartError>| match e {
-            BlockingError::Error(e) => e,
-            BlockingError::Canceled => MultipartError::Incomplete,
-        })
-        .await?;
-
+        async_file
+            .write_all(bytes.as_ref())
+            .await
+            .map_err(|e| MultipartError::Payload(PayloadError::Io(e)))?;
         written += length;
         budget -= length;
     }
+    async_file
+        .flush()
+        .await
+        .map_err(|e| MultipartError::Payload(PayloadError::Io(e)))?;
     Ok(MultipartFile {
         file: ntf,
         size: written,
@@ -186,7 +186,7 @@ mod tests {
 
         let mut data = String::new();
         let f: MultipartFile = RetrieveFromMultiparts::get_from_multiparts(&mut k, "file")?;
-        f.file.reopen().unwrap().read_to_string(&mut data).unwrap();
+        f.file.into_file().read_to_string(&mut data).unwrap();
 
         let r = Response {
             string: RetrieveFromMultiparts::get_from_multiparts(&mut k, "string")?,
