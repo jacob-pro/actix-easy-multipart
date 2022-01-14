@@ -1,2 +1,29 @@
-# actix-easy-multipart
-Easy to use Multipart Forms for Actix-web
+# Actix Easy Multipart
+
+[![Build status](https://github.com/jacob-pro/actix-easy-multipart/actions/workflows/rust.yml/badge.svg)](https://github.com/jacob-pro/actix-easy-multipart/actions/workflows/rust.yml)
+[![crates.io](https://img.shields.io/crates/v/actix-easy-multipart.svg)](https://crates.io/crates/actix-easy-multipart)
+[![docs.rs](https://docs.rs/actix-easy-multipart/badge.svg)](https://docs.rs/crate/actix-easy-multipart)
+
+Easy to use Multipart Forms for [actix-web](https://github.com/actix/actix-web).
+
+File uploads are written to disk as [temporary files](https://github.com/Stebalien/tempfile) similar to the way the
+[$_FILES](https://www.php.net/manual/en/reserved.variables.files.php#89674) variable works in PHP.
+
+## Example
+
+```rust
+use actix_web::Responder;
+use actix_easy_multipart::{MultipartFile, FromMultipart};
+use actix_easy_multipart::extractor::MultipartForm;
+
+#[derive(FromMultipart)]
+struct Upload {
+   description: String,
+   image: MultipartFile,
+}
+
+async fn route(form: MultipartForm<Upload>) -> impl Responder {
+    let img_bytes = std::fs::read(form.image.file.path()).unwrap();
+    format!("Received image of size: {}", img_bytes.len())
+}
+```

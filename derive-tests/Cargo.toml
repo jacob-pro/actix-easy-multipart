@@ -1,0 +1,9 @@
+[package]
+name = "derive-tests"
+version = "0.1.1"
+authors = ["Jacob Halsey <jacob@jhalsey.com>"]
+edition = "2018"
+
+[dev-dependencies]
+actix-easy-multipart = { path = "../actix-easy-multipart", features = ["derive"] }
+tempfile = "~3.1.0"

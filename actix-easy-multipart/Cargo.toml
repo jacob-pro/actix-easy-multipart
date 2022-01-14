@@ -1,0 +1,32 @@
+[package]
+name = "actix-easy-multipart"
+version = "0.1.0"
+authors = ["Jacob Halsey <jacob@jhalsey.com>"]
+edition = "2018"
+repository = "https://github.com/jacob-pro/actix-easy-multipart"
+homepage = "https://github.com/jacob-pro/actix-easy-multipart"
+license = "LGPL-3.0"
+description = "Easy to use Multipart Forms for Actix-web"
+
+[dependencies]
+actix-easy-multipart-derive = { version = "0.1.0", optional = true, path = "../actix-easy-multipart-derive" }
+actix-multipart = "0.2.0"
+actix-web = "2.0.0"
+futures = "0.3.1"
+mime = "0.3.16"
+serde = { version = "1.0", features = ["derive"] }
+serde_urlencoded = "0.6.1"
+tempfile = "3.1.0"
+thiserror = "1.0.30"
+validator = { version = "0.10.1", optional = true }
+
+[dev-dependencies]
+actix-easy-multipart-derive = { version = "0.1.0", optional = false, path = "../actix-easy-multipart-derive" }
+actix-multipart-rfc7578 = "0.3.0-rc"
+actix-rt = "1.0"
+awc = "1.0"
+validator_derive = "0.10.1"
+
+[features]
+derive = ["actix-easy-multipart-derive"]
+default = ["derive", "validator"]

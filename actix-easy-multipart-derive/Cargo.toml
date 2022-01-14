@@ -1,0 +1,18 @@
+[package]
+name = "actix-easy-multipart-derive"
+version = "0.1.0"
+authors = ["Jacob Halsey <jacob@jhalsey.com>"]
+edition = "2018"
+repository = "https://github.com/jacob-pro/actix-easy-multipart"
+homepage = "https://github.com/jacob-pro/actix-easy-multipart"
+license = "LGPL-3.0"
+description = "actix-easy-multipart proc-macro"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0.19"
+quote = "0.6.3"
+syn = "0.14.4"
+synstructure = "0.12.4"

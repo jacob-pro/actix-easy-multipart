@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "actix-easy-multipart",
+    "actix-easy-multipart-derive",
+    "derive-tests"
+]
