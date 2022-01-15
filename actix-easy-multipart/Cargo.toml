@@ -1,12 +1,13 @@
 [package]
 name = "actix-easy-multipart"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Jacob Halsey <jacob@jhalsey.com>"]
 edition = "2018"
 repository = "https://github.com/jacob-pro/actix-easy-multipart"
 homepage = "https://github.com/jacob-pro/actix-easy-multipart"
 license = "LGPL-3.0"
 description = "Easy to use Multipart Forms for Actix-web"
+readme = "../README.md"
 
 [dependencies]
 actix-easy-multipart-derive = { version = "0.1.0", optional = true, path = "../actix-easy-multipart-derive" }
