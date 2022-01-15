@@ -2,7 +2,7 @@
 
 [![Build status](https://github.com/jacob-pro/actix-easy-multipart/actions/workflows/rust.yml/badge.svg)](https://github.com/jacob-pro/actix-easy-multipart/actions/workflows/rust.yml)
 [![crates.io](https://img.shields.io/crates/v/actix-easy-multipart.svg)](https://crates.io/crates/actix-easy-multipart)
-[![docs.rs](https://docs.rs/actix-easy-multipart/badge.svg)](https://docs.rs/crate/actix-easy-multipart)
+[![docs.rs](https://docs.rs/actix-easy-multipart/badge.svg)](https://docs.rs/actix-easy-multipart/latest/actix_easy_multipart/)
 
 Easy to use Multipart Forms for [actix-web](https://github.com/actix/actix-web).
 
