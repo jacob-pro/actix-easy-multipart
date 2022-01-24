@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use actix_easy_multipart::FromMultipart;
-    use actix_easy_multipart::{MultipartField, MultipartText, Multiparts};
+    use actix_easy_multipart::{MultipartField, MultipartText};
     use std::convert::TryFrom;
 
     #[derive(FromMultipart, Debug)]
@@ -19,35 +19,36 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let mut m = Multiparts::new();
-        m.push(MultipartField::Text(MultipartText {
-            name: "string".to_string(),
-            text: "Hello World".to_string(),
-        }));
-        m.push(MultipartField::Text(MultipartText {
-            name: "some_string".to_string(),
-            text: "Hello World".to_string(),
-        }));
-        m.push(MultipartField::Text(MultipartText {
-            name: "int".to_string(),
-            text: "69".to_string(),
-        }));
-        m.push(MultipartField::Text(MultipartText {
-            name: "float".to_string(),
-            text: "-1.25".to_string(),
-        }));
-        m.push(MultipartField::Text(MultipartText {
-            name: "int_array".to_string(),
-            text: "2".to_string(),
-        }));
-        m.push(MultipartField::Text(MultipartText {
-            name: "int_array".to_string(),
-            text: "4".to_string(),
-        }));
-        m.push(MultipartField::Text(MultipartText {
-            name: "int_array".to_string(),
-            text: "6".to_string(),
-        }));
+        let m = vec![
+            MultipartField::Text(MultipartText {
+                name: "string".to_string(),
+                text: "Hello World".to_string(),
+            }),
+            MultipartField::Text(MultipartText {
+                name: "some_string".to_string(),
+                text: "Hello World".to_string(),
+            }),
+            MultipartField::Text(MultipartText {
+                name: "int".to_string(),
+                text: "69".to_string(),
+            }),
+            MultipartField::Text(MultipartText {
+                name: "float".to_string(),
+                text: "-1.25".to_string(),
+            }),
+            MultipartField::Text(MultipartText {
+                name: "int_array".to_string(),
+                text: "2".to_string(),
+            }),
+            MultipartField::Text(MultipartText {
+                name: "int_array".to_string(),
+                text: "4".to_string(),
+            }),
+            MultipartField::Text(MultipartText {
+                name: "int_array".to_string(),
+                text: "6".to_string(),
+            }),
+        ];
         let result = match Test::try_from(m) {
             Ok(r) => r,
             Err(e) => panic!("{}", e),

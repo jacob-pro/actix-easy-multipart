@@ -193,7 +193,7 @@ mod tests {
             int: RetrieveFromMultiparts::get_from_multiparts(&mut k, "int")?,
             file_content: data,
         };
-        Ok(HttpResponse::Ok().json(r).into())
+        Ok(HttpResponse::Ok().json(r))
     }
 
     #[actix_rt::test]
@@ -205,7 +205,9 @@ mod tests {
         form.add_text("int", "69");
 
         let temp = NamedTempFile::new().unwrap();
-        temp.as_file().write("File contents".as_bytes()).unwrap();
+        temp.as_file()
+            .write_all("File contents".as_bytes())
+            .unwrap();
         form.add_file("file", temp.path()).unwrap();
 
         let mut response = Client::default()
@@ -234,7 +236,7 @@ mod tests {
         let mut form = multipart::Form::default();
         let temp = NamedTempFile::new().unwrap();
         temp.as_file()
-            .write("More than two bytes!!!".as_bytes())
+            .write_all("More than two bytes!!!".as_bytes())
             .unwrap();
         form.add_file("file", temp.path()).unwrap();
 
