@@ -69,12 +69,12 @@ where
 {
     type Error = actix_web::Error;
     type Future = LocalBoxFuture<'static, Result<Self, Self::Error>>;
-    type Config = MultipartFormConfig;
+    // type Config = MultipartFormConfig;
 
     #[inline]
     fn from_request(req: &HttpRequest, payload: &mut Payload) -> Self::Future {
         let req2 = req.clone();
-        let config = req.app_data::<Self::Config>().cloned().unwrap_or_default();
+        let config = req.app_data::<MultipartFormConfig>().cloned().unwrap_or_default();
 
         let mp = Multipart::new(req.headers(), payload.take());
         load_parts(mp, config.text_limit, config.file_limit, config.max_parts)
