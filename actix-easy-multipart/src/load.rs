@@ -107,14 +107,12 @@ async fn create_file(
         if budget < length {
             return Err(MultipartError::Payload(PayloadError::Overflow));
         }
-        file = web::block(move || {
-            let _ = file
-                .write_all(bytes.as_ref())
-                .map_err(|e| MultipartError::Payload(PayloadError::Io(e))); // todo: handle these errors
-
-            file
-        }).await.map_err(|_| MultipartError::Incomplete)?; // todo: fix incorrect error response
-
+        let res: Result<File, MultipartError> = web::block(move || {
+            file.write_all(bytes.as_ref())
+                .map_err(|e| MultipartError::Payload(PayloadError::Io(e)))?;
+            Ok(file)
+        }).await.map_err(|blocking| MultipartError::Payload(blocking.into()))?;
+        file = res?;
 
         written += length;
         budget -= length;
@@ -122,7 +120,7 @@ async fn create_file(
     web::block(move || file
         .flush()
         .map_err(|e| MultipartError::Payload(PayloadError::Io(e)))).await
-        .map_err(|_| MultipartError::Incomplete)??;
+        .map_err(|blocking| MultipartError::Payload(blocking.into()))??;
     Ok(MultipartFile {
         file: ntf,
         size: written,
