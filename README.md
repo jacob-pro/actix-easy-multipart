@@ -26,3 +26,9 @@ async fn route(form: MultipartForm<Upload>) -> impl Responder {
     format!("Received image of size: {}", form.image.size)
 }
 ```
+
+## Versions and Compatibility
+
+| actix-easy-multipart | actix-web | tokio |
+|----------------------|-----------|-------|
+| 0.x                  | 2.x       | 0.2   |
