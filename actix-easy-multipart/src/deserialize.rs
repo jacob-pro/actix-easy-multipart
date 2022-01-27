@@ -8,11 +8,13 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("Field '{0}' not found")]
-    NotFound(String),
-    #[error("Field '{field_name}' couldn't be parsed: {error}")]
+    #[error("Text field '{0}' not found")]
+    TextNotFound(String),
+    #[error("File upload '{0}' not found")]
+    FileNotFound(String),
+    #[error("Text field '{field_name}' couldn't be parsed: {error}")]
     ParseError { field_name: String, error: String },
-    #[error("Duplicate values found for field '{0}'")]
+    #[error("Duplicate values found for '{0}'")]
     DuplicateField(String),
 }
 
@@ -70,7 +72,7 @@ where
     fn get_from_multiparts(form: &mut Multiparts, field_name: &str) -> Result<Self, Error> {
         let mut matches = Vec::<T>::get_from_multiparts(form, field_name)?;
         match matches.len() {
-            0 => Err(Error::NotFound(field_name.into())),
+            0 => Err(Error::TextNotFound(field_name.into())),
             1 => Ok(matches.pop().unwrap()),
             _ => Err(Error::DuplicateField(field_name.into())),
         }
@@ -121,7 +123,7 @@ impl RetrieveFromMultiparts for MultipartFile {
     fn get_from_multiparts(form: &mut Multiparts, field_name: &str) -> Result<Self, Error> {
         let mut matches = Vec::<MultipartFile>::get_from_multiparts(form, field_name)?;
         match matches.len() {
-            0 => Err(Error::NotFound(field_name.into())),
+            0 => Err(Error::FileNotFound(field_name.into())),
             1 => Ok(matches.pop().unwrap()),
             _ => Err(Error::DuplicateField(field_name.into())),
         }

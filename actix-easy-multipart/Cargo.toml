@@ -1,6 +1,6 @@
 [package]
 name = "actix-easy-multipart"
-version = "1.0.0"
+version = "2.0.0-beta.1"
 authors = ["Jacob Halsey <jacob@jhalsey.com>"]
 edition = "2018"
 repository = "https://github.com/jacob-pro/actix-easy-multipart"
@@ -11,22 +11,22 @@ readme = "../README.md"
 
 [dependencies]
 actix-easy-multipart-derive = { version = "0.1.0", optional = true, path = "../actix-easy-multipart-derive" }
-actix-multipart = "0.3"
-actix-web = { version = "3", default-features = false }
+actix-multipart = "0.4.0-beta.12"
+actix-web = { version = "4.0.0-beta.21", default-features = false }
 futures = "0.3.1"
 mime = "0.3.16"
 serde = { version = "1.0", features = ["derive"] }
 serde_urlencoded = "0.6.1"
 tempfile = "3.1.0"
 thiserror = "1.0.30"
-tokio = { version = "0.2", features = ["fs"] }
-validator = { version = "0.12", optional = true }
+tokio = { version = "1", features = ["fs"] }
+validator = { version = "0.14", optional = true }
 
 [dev-dependencies]
 actix-easy-multipart-derive = { version = "0.1.0", optional = false, path = "../actix-easy-multipart-derive" }
-actix-multipart-rfc7578 = "0.4"
-actix-rt = "1"
-awc = "2"
+actix-rt = "2"
+actix-test = "0.1.0-beta.11"
+reqwest = { version = "0.11", features = ["json", "multipart", "stream"] }
 validator_derive = "0.10.1"
 
 [features]

@@ -53,10 +53,7 @@ pub async fn load_parts(
         if parts.len() >= max_parts {
             return Err(MultipartError::Payload(PayloadError::Overflow));
         }
-        let cd = match field.content_disposition() {
-            Some(cd) => cd,
-            None => return Err(MultipartError::Parse(ParseError::Header)),
-        };
+        let cd = field.content_disposition();
         match cd.disposition {
             DispositionType::FormData => {}
             _ => return Err(MultipartError::Parse(ParseError::Header)),
@@ -160,11 +157,8 @@ async fn create_text(
 mod tests {
     use super::*;
     use crate::deserialize::RetrieveFromMultiparts;
-    use actix_multipart::Multipart;
-    use actix_multipart_rfc7578::client::multipart;
     use actix_web::http::StatusCode;
-    use actix_web::{test, web, App, Error, HttpResponse};
-    use awc::Client;
+    use actix_web::{web, App, Error, HttpResponse};
     use serde::{Deserialize, Serialize};
     use std::io::{Read, Write};
 
@@ -175,7 +169,7 @@ mod tests {
         file_content: String,
     }
 
-    async fn test_route(payload: Multipart) -> Result<HttpResponse, Error> {
+    async fn test_route(payload: actix_multipart::Multipart) -> Result<HttpResponse, Error> {
         let mut k = load_parts(
             payload,
             DEFAULT_TEXT_LIMIT,
@@ -198,22 +192,26 @@ mod tests {
 
     #[actix_rt::test]
     async fn test() {
-        let srv = test::start(|| App::new().route("/", web::post().to(test_route)));
-
-        let mut form = multipart::Form::default();
-        form.add_text("string", "Hello World");
-        form.add_text("int", "69");
+        let srv = actix_test::start(|| App::new().route("/", web::post().to(test_route)));
 
         let temp = NamedTempFile::new().unwrap();
         temp.as_file()
             .write_all("File contents".as_bytes())
             .unwrap();
-        form.add_file("file", temp.path()).unwrap();
+        let tokio_handle = tokio::fs::File::from_std(temp.reopen().unwrap());
 
-        let mut response = Client::default()
+        let form = reqwest::multipart::Form::new()
+            .text("string", "Hello World")
+            .text("int", "69")
+            .part(
+                "file",
+                reqwest::multipart::Part::stream(tokio_handle).file_name("name"),
+            );
+
+        let response = reqwest::Client::default()
             .post(srv.url("/"))
-            .content_type(form.content_type())
-            .send_body(multipart::Body::from(form))
+            .multipart(form)
+            .send()
             .await
             .unwrap();
 
@@ -224,33 +222,40 @@ mod tests {
         assert_eq!(res.file_content, "File contents");
     }
 
-    async fn file_size_limit_route(payload: Multipart) -> Result<HttpResponse, Error> {
+    async fn file_size_limit_route(
+        payload: actix_multipart::Multipart,
+    ) -> Result<HttpResponse, Error> {
         load_parts(payload, DEFAULT_TEXT_LIMIT, 2, DEFAULT_MAX_PARTS).await?;
         Ok(HttpResponse::Ok().into())
     }
 
     #[actix_rt::test]
     async fn file_size_limit_test() {
-        let srv = test::start(|| App::new().route("/", web::post().to(file_size_limit_route)));
+        let srv =
+            actix_test::start(|| App::new().route("/", web::post().to(file_size_limit_route)));
 
-        let mut form = multipart::Form::default();
         let temp = NamedTempFile::new().unwrap();
         temp.as_file()
             .write_all("More than two bytes!!!".as_bytes())
             .unwrap();
-        form.add_file("file", temp.path()).unwrap();
+        let tokio_handle = tokio::fs::File::from_std(temp.reopen().unwrap());
 
-        let mut response = Client::default()
+        let form = reqwest::multipart::Form::new().part(
+            "file",
+            reqwest::multipart::Part::stream(tokio_handle).file_name("name"),
+        );
+
+        let response = reqwest::Client::default()
             .post(srv.url("/"))
-            .content_type(form.content_type())
-            .send_body(multipart::Body::from(form))
+            .multipart(form)
+            .send()
             .await
             .unwrap();
 
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
         assert_eq!(
-            "A payload reached size limit.",
-            response.body().await.unwrap()
+            "Payload reached size limit.",
+            response.text().await.unwrap()
         );
     }
 }

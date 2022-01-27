@@ -29,7 +29,8 @@ async fn route(form: MultipartForm<Upload>) -> impl Responder {
 
 ## Versions and Compatibility
 
-| actix-easy-multipart | actix-web | tokio |
-|----------------------|-----------|-------|
-| 0.x                  | 2.x       | 0.2   |
-| 1.x                  | 3.x       | 0.2   |
+| actix-easy-multipart                                              | actix-web | tokio |
+|-------------------------------------------------------------------|-----------|-------|
+| [0.x](https://github.com/jacob-pro/actix-easy-multipart/tree/0.x) | 2.x       | 0.2   |
+| [1.x](https://github.com/jacob-pro/actix-easy-multipart/tree/1.x) | 3.x       | 0.2   |
+| 2.x                                                               | 4.x       | 1     |
