@@ -32,3 +32,4 @@ async fn route(form: MultipartForm<Upload>) -> impl Responder {
 | actix-easy-multipart | actix-web | tokio |
 |----------------------|-----------|-------|
 | 0.x                  | 2.x       | 0.2   |
+| 1.x                  | 3.x       | 0.2   |
