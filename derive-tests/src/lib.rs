@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use actix_easy_multipart::FromMultipart;
-    use actix_easy_multipart::{MultipartField, MultipartText};
+    use actix_easy_multipart::{Field, Text};
     use std::convert::TryFrom;
 
     #[derive(FromMultipart, Debug)]
@@ -20,31 +20,31 @@ mod tests {
     #[test]
     fn it_works() {
         let m = vec![
-            MultipartField::Text(MultipartText {
+            Field::Text(Text {
                 name: "string".to_string(),
                 text: "Hello World".to_string(),
             }),
-            MultipartField::Text(MultipartText {
+            Field::Text(Text {
                 name: "some_string".to_string(),
                 text: "Hello World".to_string(),
             }),
-            MultipartField::Text(MultipartText {
+            Field::Text(Text {
                 name: "int".to_string(),
                 text: "69".to_string(),
             }),
-            MultipartField::Text(MultipartText {
+            Field::Text(Text {
                 name: "float".to_string(),
                 text: "-1.25".to_string(),
             }),
-            MultipartField::Text(MultipartText {
+            Field::Text(Text {
                 name: "int_array".to_string(),
                 text: "2".to_string(),
             }),
-            MultipartField::Text(MultipartText {
+            Field::Text(Text {
                 name: "int_array".to_string(),
                 text: "4".to_string(),
             }),
-            MultipartField::Text(MultipartText {
+            Field::Text(Text {
                 name: "int_array".to_string(),
                 text: "6".to_string(),
             }),

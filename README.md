@@ -13,13 +13,13 @@ File uploads are written to disk as [temporary files](https://github.com/Stebali
 
 ```rust
 use actix_web::Responder;
-use actix_easy_multipart::{MultipartFile, FromMultipart};
+use actix_easy_multipart::{File, FromMultipart};
 use actix_easy_multipart::extractor::MultipartForm;
 
 #[derive(FromMultipart)]
 struct Upload {
    description: String,
-   image: MultipartFile,
+   image: File,
 }
 
 async fn route(form: MultipartForm<Upload>) -> impl Responder {

@@ -2,8 +2,10 @@
 //! [actix-web](https://github.com/actix/actix-web) framework.
 //!
 //! The extractor writes temporary files on disk using the
-//! [tempfile](https://github.com/Stebalien/tempfile) crate with similar behaviour to the
+//! [tempfile](https://github.com/Stebalien/tempfile) crate with very similar behaviour to the
 //! [$_FILES variable in PHP](https://www.php.net/manual/en/reserved.variables.files.php#89674).
+
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 // Re-export derive
 #[cfg(feature = "derive")]
@@ -11,33 +13,52 @@
 #[macro_use]
 extern crate actix_easy_multipart_derive;
 #[cfg(feature = "derive")]
-#[doc(hidden)]
+#[cfg_attr(docsrs, doc(cfg(feature = "derive")))]
 pub use actix_easy_multipart_derive::FromMultipart;
 
 pub mod deserialize;
 pub mod extractor;
-mod load;
+pub mod load;
 #[cfg(feature = "validator")]
 pub mod validated;
-
-pub use load::{load_parts, DEFAULT_FILE_LIMIT, DEFAULT_MAX_PARTS, DEFAULT_TEXT_LIMIT};
 
 use deserialize::Error;
 use std::ffi::OsStr;
 use std::path::Path;
 use tempfile::NamedTempFile;
 
-/// A list of [MultipartFields](MultipartField).
-///
-/// The [RetrieveFromMultiparts](deserialize::RetrieveFromMultiparts)
-/// and [RetrieveFromMultipartsExt](deserialize::RetrieveFromMultipartsExt) traits
-/// can be used to retrieving and parse a field by name.
-pub type Multiparts = Vec<MultipartField>;
+const DEFAULT_TEXT_LIMIT: usize = 16384; // 16 KiB
+const DEFAULT_FILE_LIMIT: usize = 51200; // 50 MiB
+const DEFAULT_MAX_PARTS: usize = 1000;
 
+/// A Field in a multipart form.
 #[derive(Debug)]
-pub enum MultipartField {
-    File(MultipartFile),
-    Text(MultipartText),
+pub enum Field {
+    File(File),
+    Text(Text),
+}
+
+impl Field {
+    pub fn name(&self) -> &str {
+        match &self {
+            Field::File(f) => &f.name,
+            Field::Text(t) => &t.name,
+        }
+    }
+
+    pub fn text(&self) -> Option<&Text> {
+        match self {
+            Field::Text(t) => Some(t),
+            _ => None,
+        }
+    }
+
+    pub fn file(&self) -> Option<&File> {
+        match self {
+            Field::File(f) => Some(f),
+            _ => None,
+        }
+    }
 }
 
 /// An uploaded file in a multipart form.
@@ -45,11 +66,11 @@ pub enum MultipartField {
 /// A part is treated as a file upload if the `Content-Type` header is set to anything
 /// other than `text/plain` or if a `filename` is specified in the `Content-Disposition` header.
 #[derive(Debug)]
-pub struct MultipartFile {
+pub struct File {
     /// The file data itself stored as a temporary file on disk.
     pub file: NamedTempFile,
     /// The size in bytes of the file.
-    pub size: u64,
+    pub size: usize,
     /// The name of the field in the multipart form.
     pub name: String,
     /// The `filename` value in the `Content-Disposition` header.
@@ -60,7 +81,7 @@ pub struct MultipartFile {
     pub mime: mime::Mime,
 }
 
-impl MultipartFile {
+impl File {
     /// Get the extension portion of the `filename` value in the `Content-Disposition` header.
     pub fn get_extension(&self) -> Option<&str> {
         self.filename
@@ -73,8 +94,8 @@ impl MultipartFile {
 ///
 /// A body part is treated as text if the `Content-Type` header is either `None` or equal
 /// to `text/plain`, and no `filename` is specified in the `Content-Disposition` header.
-#[derive(Debug)]
-pub struct MultipartText {
+#[derive(Clone, Debug)]
+pub struct Text {
     /// The name of the field in the multipart form.
     pub name: String,
     /// The text body of the field / part.

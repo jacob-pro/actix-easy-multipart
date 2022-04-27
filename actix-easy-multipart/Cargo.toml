@@ -15,6 +15,7 @@ actix-multipart = "0.4.0"
 actix-web = { version = "4.0.0", default-features = false }
 futures = "0.3.1"
 mime = "0.3.16"
+multimap = "0.8.3"
 serde = { version = "1.0", features = ["derive"] }
 serde_urlencoded = "0.6.1"
 tempfile = "3.1.0"
@@ -23,12 +24,16 @@ tokio = { version = "1", features = ["fs"] }
 validator = { version = "0.14", optional = true }
 
 [dev-dependencies]
-actix-easy-multipart-derive = { version = "0.1.0", optional = false, path = "../actix-easy-multipart-derive" }
+actix-easy-multipart-derive = { version = "0.1.0", path = "../actix-easy-multipart-derive" }
 actix-rt = "2"
 actix-test = "0.1.0-beta.13"
 reqwest = { version = "0.11", features = ["json", "multipart", "stream"] }
-validator_derive = "0.10.1"
+validator = { version = "0.14", features = ["derive"] }
 
 [features]
 derive = ["actix-easy-multipart-derive"]
 default = ["derive"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

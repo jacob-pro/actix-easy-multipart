@@ -19,7 +19,7 @@ jobs:
         run: cargo fmt -- --check
 
       - name: Cargo Clippy Check
-        run: cargo clippy --all-features --all-targets -- -D warnings
+        run: cargo clippy --all-features --workspace -- -D warnings
 
       - name: Cargo Sort Check
         run: cargo install cargo-sort --debug && cargo-sort --check --workspace

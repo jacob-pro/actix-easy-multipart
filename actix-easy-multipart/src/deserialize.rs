@@ -1,6 +1,6 @@
 //! Traits for retrieving and parsing fields out of a multipart form.
 
-use crate::{MultipartField, MultipartFile, Multiparts};
+use crate::{Field, File};
 use actix_web::http::StatusCode;
 use actix_web::ResponseError;
 use std::str::FromStr;
@@ -29,22 +29,7 @@ pub trait RetrieveFromMultiparts
 where
     Self: std::marker::Sized,
 {
-    /// Attempt to retrieve a named field/part from a multipart form.
-    ///
-    /// Implementations are provided for any type that implements `FromStr<Err = E>`
-    /// where `E: ToString`.
-    /// # Example
-    /// ```no_run
-    /// # use actix_easy_multipart::{Multiparts, MultipartFile};
-    /// # use actix_easy_multipart::deserialize::{Error, RetrieveFromMultiparts};
-    /// # fn main() -> Result<(), Error> {
-    /// # let mut form = Multiparts::new();
-    /// let int_val = i64::get_from_multiparts(&mut form, "field_name")?;
-    /// let str_val = String::get_from_multiparts(&mut form, "field_name")?;
-    /// let file = MultipartFile::get_from_multiparts(&mut form, "field_name")?;
-    /// # Ok(()) }
-    /// ```
-    fn get_from_multiparts(form: &mut Multiparts, field_name: &str) -> Result<Self, Error>;
+    fn get_from_multiparts(form: &mut Vec<Field>, field_name: &str) -> Result<Self, Error>;
 }
 
 /// Identical to [RetrieveFromMultiparts] but implemented for [Option] and [Vec].
@@ -55,13 +40,7 @@ pub trait RetrieveFromMultipartsExt
 where
     Self: std::marker::Sized,
 {
-    /// Attempt to retrieve a named field/part from the Multipart form
-    ///
-    /// Implementations provided where the type is either a `Vec<T>` or `Option<T>`,
-    /// where `T` implements `FromStr`.
-    ///
-    /// See [RetrieveFromMultiparts::get_from_multiparts] for usage.
-    fn get_from_multiparts(form: &mut Multiparts, field_name: &str) -> Result<Self, Error>;
+    fn get_from_multiparts(form: &mut Vec<Field>, field_name: &str) -> Result<Self, Error>;
 }
 
 impl<T, E> RetrieveFromMultiparts for T
@@ -69,7 +48,7 @@ where
     T: FromStr<Err = E>,
     E: ToString,
 {
-    fn get_from_multiparts(form: &mut Multiparts, field_name: &str) -> Result<Self, Error> {
+    fn get_from_multiparts(form: &mut Vec<Field>, field_name: &str) -> Result<Self, Error> {
         let mut matches = Vec::<T>::get_from_multiparts(form, field_name)?;
         match matches.len() {
             0 => Err(Error::TextNotFound(field_name.into())),
@@ -84,7 +63,7 @@ where
     T: FromStr<Err = E>,
     E: ToString,
 {
-    fn get_from_multiparts(form: &mut Multiparts, field_name: &str) -> Result<Self, Error> {
+    fn get_from_multiparts(form: &mut Vec<Field>, field_name: &str) -> Result<Self, Error> {
         let mut matches = Vec::<T>::get_from_multiparts(form, field_name)?;
         match matches.len() {
             0 => Ok(None),
@@ -99,12 +78,12 @@ where
     T: FromStr<Err = E>,
     E: ToString,
 {
-    fn get_from_multiparts(form: &mut Multiparts, field_name: &str) -> Result<Self, Error> {
+    fn get_from_multiparts(form: &mut Vec<Field>, field_name: &str) -> Result<Self, Error> {
         let mut matches = Vec::new();
         for i in form {
             match i {
-                MultipartField::File(_) => {}
-                MultipartField::Text(x) => {
+                Field::File(_) => {}
+                Field::Text(x) => {
                     if x.name == field_name {
                         let y: T = x.text.parse().map_err(|e: E| Error::ParseError {
                             field_name: field_name.into(),
@@ -119,9 +98,9 @@ where
     }
 }
 
-impl RetrieveFromMultiparts for MultipartFile {
-    fn get_from_multiparts(form: &mut Multiparts, field_name: &str) -> Result<Self, Error> {
-        let mut matches = Vec::<MultipartFile>::get_from_multiparts(form, field_name)?;
+impl RetrieveFromMultiparts for File {
+    fn get_from_multiparts(form: &mut Vec<Field>, field_name: &str) -> Result<Self, Error> {
+        let mut matches = Vec::<File>::get_from_multiparts(form, field_name)?;
         match matches.len() {
             0 => Err(Error::FileNotFound(field_name.into())),
             1 => Ok(matches.pop().unwrap()),
@@ -130,9 +109,9 @@ impl RetrieveFromMultiparts for MultipartFile {
     }
 }
 
-impl RetrieveFromMultipartsExt for Option<MultipartFile> {
-    fn get_from_multiparts(form: &mut Multiparts, field_name: &str) -> Result<Self, Error> {
-        let mut matches = Vec::<MultipartFile>::get_from_multiparts(form, field_name)?;
+impl RetrieveFromMultipartsExt for Option<File> {
+    fn get_from_multiparts(form: &mut Vec<Field>, field_name: &str) -> Result<Self, Error> {
+        let mut matches = Vec::<File>::get_from_multiparts(form, field_name)?;
         match matches.len() {
             0 => Ok(None),
             1 => Ok(Some(matches.pop().unwrap())),
@@ -141,13 +120,13 @@ impl RetrieveFromMultipartsExt for Option<MultipartFile> {
     }
 }
 
-impl RetrieveFromMultipartsExt for Vec<MultipartFile> {
-    fn get_from_multiparts(form: &mut Multiparts, field_name: &str) -> Result<Self, Error> {
+impl RetrieveFromMultipartsExt for Vec<File> {
+    fn get_from_multiparts(form: &mut Vec<Field>, field_name: &str) -> Result<Self, Error> {
         let mut indexes = Vec::new();
         for (idx, item) in form.iter().enumerate() {
             match item {
-                MultipartField::Text(_) => {}
-                MultipartField::File(x) => {
+                Field::Text(_) => {}
+                Field::File(x) => {
                     if x.name == field_name {
                         indexes.push(idx)
                     }
@@ -158,8 +137,8 @@ impl RetrieveFromMultipartsExt for Vec<MultipartFile> {
             .iter()
             .rev()
             .map(|idx| match form.remove(*idx) {
-                MultipartField::File(x) => x,
-                MultipartField::Text(_) => panic!(),
+                Field::File(x) => x,
+                Field::Text(_) => panic!(),
             })
             .collect())
     }

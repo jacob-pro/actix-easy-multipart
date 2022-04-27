@@ -1,7 +1,7 @@
 //! Multipart data extractor.
 
-use super::{load_parts, Multiparts};
-use crate::{Error, DEFAULT_FILE_LIMIT, DEFAULT_MAX_PARTS, DEFAULT_TEXT_LIMIT};
+use crate::load::Loader;
+use crate::{Error, Field, DEFAULT_FILE_LIMIT, DEFAULT_MAX_PARTS, DEFAULT_TEXT_LIMIT};
 use actix_multipart::{Multipart, MultipartError};
 use actix_web::dev::Payload;
 use actix_web::http::StatusCode;
@@ -13,9 +13,9 @@ use std::ops;
 use std::rc::Rc;
 use thiserror::Error;
 
-/// Multipart data extractor (`multipart/form-data`).
+/// Multipart form extractor (`multipart/form-data`).
 ///
-/// Can be used to extract multipart data from the request body.
+/// Can be used to extract a multipart form from the request body.
 ///
 /// [MultipartFormConfig] allows you to configure extraction process.
 ///
@@ -29,12 +29,11 @@ use thiserror::Error;
 /// #[derive(FromMultipart)]
 /// struct Upload {
 ///    description: String,
-///    image: MultipartFile,
+///    image: File,
 /// }
 /// # use actix_web::Responder;
-/// # use actix_easy_multipart::MultipartFile;
+/// # use actix_easy_multipart::File;
 /// # use actix_easy_multipart::extractor::MultipartForm;
-/// use std::io::Read;
 ///
 /// async fn route(form: MultipartForm<Upload>) -> impl Responder {
 ///     format!("Received image of size: {}", form.image.size)
@@ -65,7 +64,7 @@ impl<T> ops::DerefMut for MultipartForm<T> {
 
 impl<T> FromRequest for MultipartForm<T>
 where
-    T: TryFrom<Multiparts, Error = Error> + 'static,
+    T: TryFrom<Vec<Field>, Error = Error> + 'static,
 {
     type Error = actix_web::Error;
     type Future = LocalBoxFuture<'static, Result<Self, Self::Error>>;
@@ -78,8 +77,14 @@ where
             .cloned()
             .unwrap_or_default();
 
-        let mp = Multipart::new(req.headers(), payload.take());
-        load_parts(mp, config.text_limit, config.file_limit, config.max_parts)
+        let payload = Multipart::new(req.headers(), payload.take());
+        let loader = Loader::builder()
+            .max_parts(config.max_parts)
+            .file_limit(config.file_limit)
+            .text_limit(config.text_limit)
+            .build();
+        loader
+            .load_fields(payload)
             .map(move |res| match res {
                 Ok(item) => {
                     let t = T::try_from(item)?;
@@ -112,26 +117,25 @@ where
 #[derive(Clone)]
 pub struct MultipartFormConfig {
     text_limit: usize,
-    file_limit: u64,
+    file_limit: usize,
     max_parts: usize,
     error_handler: Option<Rc<dyn Fn(MultipartFormError, &HttpRequest) -> actix_web::Error>>,
 }
 
 impl MultipartFormConfig {
-    /// Change max number bytes of text in the multipart. Defaults to [DEFAULT_TEXT_LIMIT].
+    /// Change maximum allowed bytes of text in the form.
     pub fn text_limit(mut self, limit: usize) -> Self {
         self.text_limit = limit;
         self
     }
 
-    /// Change max number of bytes for all files in the multipart.
-    /// Defaults to [DEFAULT_FILE_LIMIT].
-    pub fn file_limit(mut self, limit: u64) -> Self {
+    /// Change maximum allowed bytes for all files in the form.
+    pub fn file_limit(mut self, limit: usize) -> Self {
         self.file_limit = limit;
         self
     }
 
-    /// Change max number of parts in the form. Defaults to [DEFAULT_MAX_PARTS].
+    /// Change maximum allowed parts in the form.
     pub fn max_parts(mut self, max: usize) -> Self {
         self.max_parts = max;
         self
@@ -161,7 +165,7 @@ impl Default for MultipartFormConfig {
 #[derive(Error, Debug)]
 pub enum MultipartFormError {
     #[error("Multipart error: {0}")]
-    Multipart(MultipartError),
+    Multipart(#[source] MultipartError),
     #[error("Deserialization error: {0}")]
     Deserialization(
         #[from]

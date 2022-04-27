@@ -35,11 +35,11 @@ pub fn impl_from_multipart(input: TokenStream) -> TokenStream {
     }
 
     let gen = quote! {
-        impl std::convert::TryFrom<actix_easy_multipart::Multiparts> for #name {
+        impl std::convert::TryFrom<Vec<actix_easy_multipart::Field>> for #name {
 
             type Error = actix_easy_multipart::deserialize::Error;
 
-            fn try_from(mut value: actix_easy_multipart::Multiparts) -> Result<Self, Self::Error> {
+            fn try_from(mut value: Vec<actix_easy_multipart::Field>) -> Result<Self, Self::Error> {
                 use actix_easy_multipart::deserialize::RetrieveFromMultiparts;
                 use actix_easy_multipart::deserialize::RetrieveFromMultipartsExt;
                 let x = Self {
