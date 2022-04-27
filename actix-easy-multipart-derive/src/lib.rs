@@ -4,7 +4,7 @@ use crate::proc_macro::TokenStream;
 use quote::quote;
 use syn::{PathArguments, Type};
 
-#[proc_macro_derive(FromMultipart)]
+#[proc_macro_derive(FromMultipart, attributes(from_multipart))]
 pub fn impl_from_multipart(input: TokenStream) -> TokenStream {
     let ast: syn::DeriveInput = syn::parse(input).unwrap();
 
@@ -30,21 +30,27 @@ pub fn impl_from_multipart(input: TokenStream) -> TokenStream {
         let last = &mut x.path.segments.last_mut().unwrap();
         last.value_mut().arguments = PathArguments::None;
         fields_vec_innards.extend(quote!(
-            #name: #x::get_from_multiparts(&mut value, stringify!(#name))?,
+            #name: #x::from_fields(form.remove(stringify!(#name)).unwrap_or_default(), &cfg, stringify!(#name))?,
         ));
     }
 
     let gen = quote! {
-        impl std::convert::TryFrom<Vec<actix_easy_multipart::Field>> for #name {
+        impl std::convert::TryFrom<actix_easy_multipart::load::GroupedFields> for #name {
 
             type Error = actix_easy_multipart::deserialize::Error;
 
-            fn try_from(mut value: Vec<actix_easy_multipart::Field>) -> Result<Self, Self::Error> {
-                use actix_easy_multipart::deserialize::RetrieveFromMultiparts;
-                use actix_easy_multipart::deserialize::RetrieveFromMultipartsExt;
+            fn try_from(mut form: actix_easy_multipart::load::GroupedFields) -> Result<Self, Self::Error> {
+                use actix_easy_multipart::deserialize::FromField;
+                use actix_easy_multipart::deserialize::FromFieldExt;
+                let cfg = actix_easy_multipart::deserialize::FromFieldConfig::default();
                 let x = Self {
                     #fields_vec_innards
                 };
+                // if deny_extra_parts {
+                //     if let Some(fields) = form.iter().next() {
+                //         return Err(Self::Error::UnexpectedPart(fields.0.to_owned()))
+                //     }
+                // }
                 Ok(x)
             }
         }

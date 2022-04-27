@@ -1,7 +1,7 @@
 //! Validated multipart data extractor.
 
-use crate::load::Loader;
-use crate::{Error, Field, DEFAULT_FILE_LIMIT, DEFAULT_MAX_PARTS, DEFAULT_TEXT_LIMIT};
+use crate::load::{GroupedFields, Loader};
+use crate::{Error, DEFAULT_FILE_LIMIT, DEFAULT_MAX_PARTS, DEFAULT_TEXT_LIMIT};
 use actix_multipart::{Multipart, MultipartError};
 use actix_web::dev::Payload;
 use actix_web::http::StatusCode;
@@ -67,7 +67,7 @@ impl<T: Validate> ops::DerefMut for MultipartForm<T> {
 
 impl<T> FromRequest for MultipartForm<T>
 where
-    T: TryFrom<Vec<Field>, Error = Error> + Validate + 'static,
+    T: TryFrom<GroupedFields, Error = Error> + Validate + 'static,
 {
     type Error = actix_web::Error;
     type Future = LocalBoxFuture<'static, Result<Self, Self::Error>>;
@@ -87,7 +87,7 @@ where
             .text_limit(config.text_limit)
             .build();
         loader
-            .load_fields(payload)
+            .load_grouped(payload)
             .map(move |res| match res {
                 Ok(item) => {
                     let form = T::try_from(item)?;

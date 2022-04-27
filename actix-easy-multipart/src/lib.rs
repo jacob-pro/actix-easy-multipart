@@ -12,6 +12,9 @@
 #[allow(unused_imports)]
 #[macro_use]
 extern crate actix_easy_multipart_derive;
+
+/// Implements [TryFrom\<GroupedFields\>](load::GroupedFields) for your
+/// struct (allowing use with the [extractor](extractor::MultipartForm)).
 #[cfg(feature = "derive")]
 #[cfg_attr(docsrs, doc(cfg(feature = "derive")))]
 pub use actix_easy_multipart_derive::FromMultipart;
@@ -46,14 +49,28 @@ impl Field {
         }
     }
 
-    pub fn text(&self) -> Option<&Text> {
+    pub fn text_ref(&self) -> Option<&Text> {
         match self {
             Field::Text(t) => Some(t),
             _ => None,
         }
     }
 
-    pub fn file(&self) -> Option<&File> {
+    pub fn text(self) -> Option<Text> {
+        match self {
+            Field::Text(t) => Some(t),
+            _ => None,
+        }
+    }
+
+    pub fn file_ref(&self) -> Option<&File> {
+        match self {
+            Field::File(f) => Some(f),
+            _ => None,
+        }
+    }
+
+    pub fn file(self) -> Option<File> {
         match self {
             Field::File(f) => Some(f),
             _ => None,

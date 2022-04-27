@@ -1,5 +1,3 @@
-//! Traits for retrieving and parsing fields out of a multipart form.
-
 use crate::{Field, File};
 use actix_web::http::StatusCode;
 use actix_web::ResponseError;
@@ -12,10 +10,13 @@ pub enum Error {
     TextNotFound(String),
     #[error("File upload '{0}' not found")]
     FileNotFound(String),
-    #[error("Text field '{field_name}' couldn't be parsed: {error}")]
-    ParseError { field_name: String, error: String },
-    #[error("Duplicate values found for '{0}'")]
-    DuplicateField(String),
+    #[error("Text field '{field_name}' couldn't be parsed: {source}")]
+    ParseError {
+        field_name: String,
+        source: Box<dyn std::error::Error + Send>,
+    },
+    #[error("Unexpected part found with name '{0}'")]
+    UnexpectedPart(String),
 }
 
 impl ResponseError for Error {
@@ -24,122 +25,152 @@ impl ResponseError for Error {
     }
 }
 
-/// Allows retrieving a specific named field/part from a Multipart form.
-pub trait RetrieveFromMultiparts
+#[doc(hidden)]
+#[derive(Default)]
+pub struct FromFieldConfig {
+    pub deny_extra_parts: bool,
+}
+
+#[doc(hidden)]
+pub trait FromField
 where
     Self: std::marker::Sized,
 {
-    fn get_from_multiparts(form: &mut Vec<Field>, field_name: &str) -> Result<Self, Error>;
+    fn from_fields(
+        fields: Vec<Field>,
+        config: &FromFieldConfig,
+        field_name: &str,
+    ) -> Result<Self, Error>;
 }
 
-/// Identical to [RetrieveFromMultiparts] but implemented for [Option] and [Vec].
-///
-/// This second trait is expected to not be needed once trait
-/// [specialization](https://rust-lang.github.io/rfcs/1210-impl-specialization.html) is stable.
-pub trait RetrieveFromMultipartsExt
+#[doc(hidden)]
+pub trait FromFieldExt
 where
     Self: std::marker::Sized,
 {
-    fn get_from_multiparts(form: &mut Vec<Field>, field_name: &str) -> Result<Self, Error>;
+    fn from_fields(
+        fields: Vec<Field>,
+        config: &FromFieldConfig,
+        field_name: &str,
+    ) -> Result<Self, Error>;
 }
 
-impl<T, E> RetrieveFromMultiparts for T
+impl<T, E> FromField for T
 where
     T: FromStr<Err = E>,
-    E: ToString,
+    E: std::error::Error + Send + 'static,
 {
-    fn get_from_multiparts(form: &mut Vec<Field>, field_name: &str) -> Result<Self, Error> {
-        let mut matches = Vec::<T>::get_from_multiparts(form, field_name)?;
+    fn from_fields(
+        fields: Vec<Field>,
+        config: &FromFieldConfig,
+        field_name: &str,
+    ) -> Result<Self, Error> {
+        let mut matches = Vec::<T>::from_fields(fields, config, field_name)?;
         match matches.len() {
             0 => Err(Error::TextNotFound(field_name.into())),
             1 => Ok(matches.pop().unwrap()),
-            _ => Err(Error::DuplicateField(field_name.into())),
+            _ if config.deny_extra_parts => Err(Error::UnexpectedPart(field_name.into())),
+            _ => Ok(matches.pop().unwrap()),
         }
     }
 }
 
-impl<T, E> RetrieveFromMultipartsExt for Option<T>
+impl<T, E> FromFieldExt for Option<T>
 where
     T: FromStr<Err = E>,
-    E: ToString,
+    E: std::error::Error + Send + 'static,
 {
-    fn get_from_multiparts(form: &mut Vec<Field>, field_name: &str) -> Result<Self, Error> {
-        let mut matches = Vec::<T>::get_from_multiparts(form, field_name)?;
+    fn from_fields(
+        fields: Vec<Field>,
+        config: &FromFieldConfig,
+        field_name: &str,
+    ) -> Result<Self, Error> {
+        let mut matches = Vec::<T>::from_fields(fields, config, field_name)?;
         match matches.len() {
             0 => Ok(None),
             1 => Ok(Some(matches.pop().unwrap())),
-            _ => Err(Error::DuplicateField(field_name.into())),
+            _ if config.deny_extra_parts => Err(Error::UnexpectedPart(field_name.into())),
+            _ => Ok(Some(matches.pop().unwrap())),
         }
     }
 }
 
-impl<T, E> RetrieveFromMultipartsExt for Vec<T>
+impl<T, E> FromFieldExt for Vec<T>
 where
     T: FromStr<Err = E>,
-    E: ToString,
+    E: std::error::Error + Send + 'static,
 {
-    fn get_from_multiparts(form: &mut Vec<Field>, field_name: &str) -> Result<Self, Error> {
-        let mut matches = Vec::new();
-        for i in form {
-            match i {
-                Field::File(_) => {}
-                Field::Text(x) => {
-                    if x.name == field_name {
-                        let y: T = x.text.parse().map_err(|e: E| Error::ParseError {
-                            field_name: field_name.into(),
-                            error: e.to_string(),
-                        })?;
-                        matches.push(y);
-                    }
-                }
-            }
+    fn from_fields(
+        fields: Vec<Field>,
+        config: &FromFieldConfig,
+        field_name: &str,
+    ) -> Result<Self, Error> {
+        let total = fields.len();
+        let texts = fields
+            .into_iter()
+            .filter_map(Field::text)
+            .map(|text| {
+                T::from_str(&text.text).map_err(|source| Error::ParseError {
+                    field_name: field_name.to_string(),
+                    source: Box::new(source),
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        if config.deny_extra_parts && texts.len() < total {
+            // Non texts found
+            return Err(Error::UnexpectedPart(field_name.to_string()));
         }
-        Ok(matches)
+        Ok(texts)
     }
 }
 
-impl RetrieveFromMultiparts for File {
-    fn get_from_multiparts(form: &mut Vec<Field>, field_name: &str) -> Result<Self, Error> {
-        let mut matches = Vec::<File>::get_from_multiparts(form, field_name)?;
+impl FromField for File {
+    fn from_fields(
+        fields: Vec<Field>,
+        config: &FromFieldConfig,
+        field_name: &str,
+    ) -> Result<Self, Error> {
+        let mut matches = Vec::<File>::from_fields(fields, config, field_name)?;
         match matches.len() {
             0 => Err(Error::FileNotFound(field_name.into())),
             1 => Ok(matches.pop().unwrap()),
-            _ => Err(Error::DuplicateField(field_name.into())),
+            _ if config.deny_extra_parts => Err(Error::UnexpectedPart(field_name.into())),
+            _ => Ok(matches.pop().unwrap()),
         }
     }
 }
 
-impl RetrieveFromMultipartsExt for Option<File> {
-    fn get_from_multiparts(form: &mut Vec<Field>, field_name: &str) -> Result<Self, Error> {
-        let mut matches = Vec::<File>::get_from_multiparts(form, field_name)?;
+impl FromFieldExt for Option<File> {
+    fn from_fields(
+        fields: Vec<Field>,
+        config: &FromFieldConfig,
+        field_name: &str,
+    ) -> Result<Self, Error> {
+        let mut matches = Vec::<File>::from_fields(fields, config, field_name)?;
         match matches.len() {
             0 => Ok(None),
             1 => Ok(Some(matches.pop().unwrap())),
-            _ => Err(Error::DuplicateField(field_name.into())),
+            _ if config.deny_extra_parts => Err(Error::UnexpectedPart(field_name.into())),
+            _ => Ok(Some(matches.pop().unwrap())),
         }
     }
 }
 
-impl RetrieveFromMultipartsExt for Vec<File> {
-    fn get_from_multiparts(form: &mut Vec<Field>, field_name: &str) -> Result<Self, Error> {
-        let mut indexes = Vec::new();
-        for (idx, item) in form.iter().enumerate() {
-            match item {
-                Field::Text(_) => {}
-                Field::File(x) => {
-                    if x.name == field_name {
-                        indexes.push(idx)
-                    }
-                }
-            }
+impl FromFieldExt for Vec<File> {
+    fn from_fields(
+        fields: Vec<Field>,
+        config: &FromFieldConfig,
+        field_name: &str,
+    ) -> Result<Self, Error> {
+        let total = fields.len();
+        let files = fields
+            .into_iter()
+            .filter_map(Field::file)
+            .collect::<Vec<_>>();
+        if config.deny_extra_parts && files.len() < total {
+            // Non files found
+            return Err(Error::UnexpectedPart(field_name.to_string()));
         }
-        Ok(indexes
-            .iter()
-            .rev()
-            .map(|idx| match form.remove(*idx) {
-                Field::File(x) => x,
-                Field::Text(_) => panic!(),
-            })
-            .collect())
+        Ok(files)
     }
 }

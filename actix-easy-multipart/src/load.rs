@@ -11,6 +11,9 @@ use multimap::MultiMap;
 use tempfile::NamedTempFile;
 use tokio::io::AsyncWriteExt;
 
+/// A multipart form of fields grouped by name.
+pub type GroupedFields = MultiMap<String, Field>;
+
 /// Utility for loading a multipart form from an [Actix Multipart](actix_multipart::Multipart)
 /// request.
 ///
@@ -109,7 +112,7 @@ impl Loader {
     pub async fn load_grouped(
         self,
         payload: actix_multipart::Multipart,
-    ) -> Result<MultiMap<String, Field>, MultipartError> {
+    ) -> Result<GroupedFields, MultipartError> {
         let parts = self.load_fields(payload).await?;
         Ok(parts
             .into_iter()
@@ -239,16 +242,23 @@ mod tests {
     async fn test_route(payload: actix_multipart::Multipart) -> Result<HttpResponse, Error> {
         let parts = Loader::default().load_grouped(payload).await?;
 
-        let mut data = String::new();
-        let file = parts.get("file").unwrap().file().unwrap();
+        let mut file_content = String::new();
+        let file = parts.get("file").unwrap().file_ref().unwrap();
         let mut file = tokio::fs::File::from_std(file.file.reopen().unwrap());
-        file.read_to_string(&mut data).await.unwrap();
+        file.read_to_string(&mut file_content).await.unwrap();
 
-        let r = Response {
-            string: parts.get("string").unwrap().text().unwrap().text.clone(),
-            file_content: data,
-        };
-        Ok(HttpResponse::Ok().json(r))
+        let string = parts
+            .get("string")
+            .unwrap()
+            .text_ref()
+            .unwrap()
+            .text
+            .clone();
+
+        Ok(HttpResponse::Ok().json(Response {
+            string,
+            file_content,
+        }))
     }
 
     #[actix_rt::test]
