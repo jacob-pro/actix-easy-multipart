@@ -15,11 +15,46 @@ extern crate actix_easy_multipart_derive;
 
 /// Implements [TryFrom\<GroupedFields\>](load::GroupedFields) for your
 /// struct (allowing use with the [extractor](extractor::MultipartForm)).
+///
+/// # Supported Types
+///
+/// Your struct can contain fields with types:
+/// - `T`
+/// - `Option<T>`
+/// - `Vec<T>` (parts are treated as an array when they
+/// [share the same field name](https://datatracker.ietf.org/doc/html/rfc7578#section-4.3))
+///
+/// Where `T` either implements [ToString] or is a [File].
+///
+/// # Extra Parts
+///
+/// When the `#[from_multipart(deny_extra_parts)]` attribute is enabled, deserialization will
+/// fail if the form contains extra field names, or extra values for a singular / option part, or
+/// additional values of the wrong type (file vs text) for an option or array part.
+///
+/// When `deny_extra_parts` is disabled, and multiple parts are uploaded for the same non-array
+/// field name, then only the last uploaded part will be taken.
+///
+/// # Example
+/// ```
+/// # use actix_easy_multipart::File;
+/// use actix_easy_multipart::FromMultipart;
+/// #[derive(FromMultipart)]
+/// #[from_multipart(deny_extra_parts)]
+/// struct YourStruct {
+///     optional: Option<String>,
+///     int: i32,
+///     file_array: Vec<File>,
+/// }
+/// ```
 #[cfg(feature = "derive")]
 #[cfg_attr(docsrs, doc(cfg(feature = "derive")))]
 pub use actix_easy_multipart_derive::FromMultipart;
 
+#[cfg(feature = "derive")]
+#[cfg_attr(docsrs, doc(cfg(feature = "derive")))]
 pub mod deserialize;
+
 pub mod extractor;
 pub mod load;
 #[cfg(feature = "validator")]

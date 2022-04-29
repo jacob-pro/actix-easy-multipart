@@ -1,6 +1,6 @@
 [package]
 name = "actix-easy-multipart"
-version = "2.0.0"
+version = "2.1.0"
 authors = ["Jacob Halsey <jacob@jhalsey.com>"]
 edition = "2018"
 repository = "https://github.com/jacob-pro/actix-easy-multipart"
@@ -10,7 +10,7 @@ description = "Easy to use Multipart Forms for Actix-web"
 readme = "../README.md"
 
 [dependencies]
-actix-easy-multipart-derive = { version = "0.1.0", optional = true, path = "../actix-easy-multipart-derive" }
+actix-easy-multipart-derive = { version = "0.2.0", optional = true, path = "../actix-easy-multipart-derive" }
 actix-multipart = "0.4.0"
 actix-web = { version = "4.0.0", default-features = false }
 futures = "0.3.1"
@@ -24,7 +24,7 @@ tokio = { version = "1", features = ["fs"] }
 validator = { version = "0.14", optional = true }
 
 [dev-dependencies]
-actix-easy-multipart-derive = { version = "0.1.0", path = "../actix-easy-multipart-derive" }
+actix-easy-multipart-derive = { version = "0.2.0", path = "../actix-easy-multipart-derive" }
 actix-rt = "2"
 actix-test = "0.1.0-beta.13"
 reqwest = { version = "0.11", features = ["json", "multipart", "stream"] }

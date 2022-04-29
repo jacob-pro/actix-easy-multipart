@@ -34,3 +34,15 @@ async fn route(form: MultipartForm<Upload>) -> impl Responder {
 | [0.x](https://github.com/jacob-pro/actix-easy-multipart/tree/0.x) | 2.x       | 0.2   |
 | [1.x](https://github.com/jacob-pro/actix-easy-multipart/tree/1.x) | 3.x       | 0.2   |
 | 2.x                                                               | 4.x       | 1     |
+
+## Future
+
+There is definitely scope to add additional features if they are helpful for people - please raise an issue
+if you would like to see them implemented:
+
+- Deserializing to an "Either" type which could be Text or a File.
+- Using custom rules to determine if field should be read into memory (Text) or written to disk (File).
+- Infer if part should be treated as Text or File based on struct definition.
+- Alternative conventions for grouping parts into an array type, e.g. `field[0]` notation.
+- Renaming fields; mapping part field names to alternative struct field names.
+- Treating Text fields as binary.

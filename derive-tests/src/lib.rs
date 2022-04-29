@@ -104,29 +104,96 @@ mod tests {
     }
 
     #[derive(FromMultipart)]
+    #[allow(unused)]
     struct TestMissing {
-        _string: String,
-        _file: File,
+        string: String,
+        file: File,
     }
 
     #[test]
     fn test_missing() {
-        let missing_file = mock_form(vec![mock_text("_string", "One")]);
+        let missing_file = mock_form(vec![mock_text("string", "One")]);
         match TestMissing::try_from(missing_file) {
-            Err(Error::FileNotFound(f)) if f == "_file" => {}
-            _ => panic!("Unexpected result"),
+            Err(Error::FileNotFound(f)) if f == "file" => {}
+            _ => panic!("Incorrect result"),
         }
 
-        let missing_string = mock_form(vec![mock_file("_file", 10)]);
+        let missing_string = mock_form(vec![mock_file("file", 10)]);
         match TestMissing::try_from(missing_string) {
-            Err(Error::TextNotFound(f)) if f == "_string" => {}
-            _ => panic!("Unexpected result"),
+            Err(Error::TextNotFound(f)) if f == "string" => {}
+            _ => panic!("Incorrect result"),
         }
     }
 
     #[derive(FromMultipart)]
     #[from_multipart(deny_extra_parts)]
-    struct DeniesExtras1 {
-        _string: String,
+    #[allow(unused)]
+    struct DeniesExtras {
+        string: String,
+        file: File,
+    }
+
+    #[test]
+    fn test_denies_extras() {
+        let extra_field = mock_form(vec![
+            mock_text("string", "One"),
+            mock_file("file", 10),
+            mock_text("extra", "extra"),
+        ]);
+        match DeniesExtras::try_from(extra_field) {
+            Err(Error::UnexpectedPart(f)) if f == "extra" => {}
+            _ => panic!("Incorrect result"),
+        }
+
+        let multiple_strings = mock_form(vec![
+            mock_text("string", "One"),
+            mock_text("string", "Two"),
+            mock_file("file", 10),
+        ]);
+        match DeniesExtras::try_from(multiple_strings) {
+            Err(Error::UnexpectedPart(f)) if f == "string" => {}
+            _ => panic!("Incorrect result"),
+        }
+
+        let multiple_files = mock_form(vec![
+            mock_text("string", "One"),
+            mock_file("file", 10),
+            mock_file("file", 20),
+        ]);
+        match DeniesExtras::try_from(multiple_files) {
+            Err(Error::UnexpectedPart(f)) if f == "file" => {}
+            _ => panic!("Incorrect result"),
+        }
+    }
+
+    #[derive(FromMultipart)]
+    #[from_multipart(deny_extra_parts)]
+    #[allow(unused)]
+    struct DeniesExtrasOption {
+        string: Option<String>,
+        file: Option<File>,
+    }
+
+    #[test]
+    fn test_denies_extras_for_options() {
+        let multiple_strings =
+            mock_form(vec![mock_text("string", "One"), mock_text("string", "Two")]);
+        match DeniesExtrasOption::try_from(multiple_strings) {
+            Err(Error::UnexpectedPart(f)) if f == "string" => {}
+            _ => panic!("Incorrect result"),
+        }
+
+        let multiple_files = mock_form(vec![mock_file("file", 10), mock_file("file", 20)]);
+        match DeniesExtrasOption::try_from(multiple_files) {
+            Err(Error::UnexpectedPart(f)) if f == "file" => {}
+            _ => panic!("Incorrect result"),
+        }
+
+        let multiple_mixed =
+            mock_form(vec![mock_text("file", "text value"), mock_file("file", 20)]);
+        match DeniesExtrasOption::try_from(multiple_mixed) {
+            Err(Error::UnexpectedPart(f)) if f == "file" => {}
+            _ => panic!("Incorrect result"),
+        }
     }
 }

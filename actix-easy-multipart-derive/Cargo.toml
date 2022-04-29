@@ -1,6 +1,6 @@
 [package]
 name = "actix-easy-multipart-derive"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Jacob Halsey <jacob@jhalsey.com>"]
 edition = "2018"
 repository = "https://github.com/jacob-pro/actix-easy-multipart"
@@ -12,7 +12,7 @@ description = "actix-easy-multipart proc-macro"
 proc-macro = true
 
 [dependencies]
-proc-macro2 = "1.0.19"
-quote = "0.6.3"
-syn = "0.14.4"
-synstructure = "0.12.4"
+darling = "0.14.1"
+proc-macro2 = "1.0.37"
+quote = "1.0.18"
+syn = "1.0.92"

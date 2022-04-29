@@ -1,3 +1,6 @@
+//! Types relating to the [FromMultipart] derive macro used for deserializing
+//! a loaded multipart form into a struct.
+
 use crate::{Field, File};
 use actix_web::http::StatusCode;
 use actix_web::ResponseError;
