@@ -1,7 +1,8 @@
 //! Validated multipart data extractor.
 
+use crate::deserialize::Error;
 use crate::load::{GroupedFields, Loader};
-use crate::{Error, DEFAULT_FILE_LIMIT, DEFAULT_MAX_PARTS, DEFAULT_TEXT_LIMIT};
+use crate::{DEFAULT_FILE_LIMIT, DEFAULT_MAX_PARTS, DEFAULT_TEXT_LIMIT};
 use actix_multipart::{Multipart, MultipartError};
 use actix_web::dev::Payload;
 use actix_web::http::StatusCode;

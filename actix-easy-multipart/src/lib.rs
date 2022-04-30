@@ -51,16 +51,12 @@ extern crate actix_easy_multipart_derive;
 #[cfg_attr(docsrs, doc(cfg(feature = "derive")))]
 pub use actix_easy_multipart_derive::FromMultipart;
 
-#[cfg(feature = "derive")]
-#[cfg_attr(docsrs, doc(cfg(feature = "derive")))]
 pub mod deserialize;
-
 pub mod extractor;
 pub mod load;
 #[cfg(feature = "validator")]
 pub mod validated;
 
-use deserialize::Error;
 use std::ffi::OsStr;
 use std::path::Path;
 use tempfile::NamedTempFile;

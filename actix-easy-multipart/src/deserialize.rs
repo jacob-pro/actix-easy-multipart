@@ -1,5 +1,4 @@
-//! Types relating to the [FromMultipart] derive macro used for deserializing
-//! a loaded multipart form into a struct.
+//! Helper types used for extracting and deserializing a multipart into a struct.
 
 use crate::{Field, File};
 use actix_web::http::StatusCode;
