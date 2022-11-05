@@ -24,6 +24,10 @@ use std::sync::Arc;
 #[cfg(test)]
 extern crate self as actix_easy_multipart;
 
+// Re-export actix-multipart for use in macro
+#[doc(hidden)]
+pub use actix_multipart;
+
 /// Implements the [`MultipartFormTrait`] for a struct so that it can be used with the
 /// [`struct@MultipartForm`] extractor.
 ///
