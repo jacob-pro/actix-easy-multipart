@@ -155,7 +155,7 @@ pub fn impl_multipart_form(input: proc_macro::TokenStream) -> proc_macro::TokenS
 
             fn handle_field<'t>(
                 req: &'t ::actix_web::HttpRequest,
-                field: ::actix_multipart::Field,
+                field: ::actix_easy_multipart::actix_multipart::Field,
                 limits: &'t mut ::actix_easy_multipart::Limits,
                 state: &'t mut ::actix_easy_multipart::State,
             ) -> ::std::pin::Pin<::std::boxed::Box<dyn ::std::future::Future<Output = ::std::result::Result<(), ::actix_easy_multipart::Error>> + 't>> {
