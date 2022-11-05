@@ -12,8 +12,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Cargo Test
-        run: cargo test -- --nocapture
+      - name: Cargo Test (No features)
+        run: cargo test --no-default-features -- --nocapture
+
+      - name: Cargo Test (All features)
+        run: cargo test --all-features -- --nocapture
 
       - name: Cargo Format Check
         run: cargo fmt -- --check
