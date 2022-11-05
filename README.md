@@ -4,10 +4,7 @@
 [![crates.io](https://img.shields.io/crates/v/actix-easy-multipart.svg)](https://crates.io/crates/actix-easy-multipart)
 [![docs.rs](https://docs.rs/actix-easy-multipart/badge.svg)](https://docs.rs/actix-easy-multipart/latest/actix_easy_multipart/)
 
-Easy to use Multipart Forms for [actix-web](https://github.com/actix/actix-web).
-
-File uploads are written to disk as [temporary files](https://github.com/Stebalien/tempfile) similar to the way the
-[$_FILES](https://www.php.net/manual/en/reserved.variables.files.php#89674) variable works in PHP.
+Typed multipart form extractor for [actix-web](https://github.com/actix/actix-web).
 
 ## Example
 
@@ -16,16 +13,28 @@ use actix_web::Responder;
 use actix_easy_multipart::{File, FromMultipart};
 use actix_easy_multipart::extractor::MultipartForm;
 
-#[derive(FromMultipart)]
+#[derive(MultipartForm)]
 struct Upload {
-   description: String,
-   image: File,
+    description: Option<Text<String>>,
+    timestamp: Text<i64>,
+    #[multipart(rename="image_set[]")
+    image_set: Vec<Tempfile>,
 }
 
 async fn route(form: MultipartForm<Upload>) -> impl Responder {
-    format!("Received image of size: {}", form.image.size)
+    format!("Received 5 images: {}", form.image_set.len())
 }
 ```
+
+## Features
+
+- Receiving optional fields, using `Option`.
+- Receiving [lists of fields](https://www.rfc-editor.org/rfc/rfc7578#section-4.3), using `Vec<T>`.
+- Deserialize integers, floats, enums from plain text fields using `Text<T>`.
+- Deserialize complex data from JSON uploads, using `Json<T>`.
+- Receive file uploads into temporary files on disk, using `Tempfile`.
+- User customisable asynchronous field readers, for example you may want to stream form data to an object storage 
+  service, just implement the `FieldReader` trait.
 
 ## Versions and Compatibility
 
@@ -34,15 +43,9 @@ async fn route(form: MultipartForm<Upload>) -> impl Responder {
 | [0.x](https://github.com/jacob-pro/actix-easy-multipart/tree/0.x) | 2.x       | 0.2   |
 | [1.x](https://github.com/jacob-pro/actix-easy-multipart/tree/1.x) | 3.x       | 0.2   |
 | 2.x                                                               | 4.x       | 1     |
+| 3.x                                                               | 4.x       | 1     |
 
-## Future
+## See Also
 
-There is definitely scope to add additional features if they are helpful for people - please raise an issue
-if you would like to see them implemented:
-
-- Deserializing to an "Either" type which could be Text or a File.
-- Using custom rules to determine if field should be read into memory (Text) or written to disk (File).
-- Infer if part should be treated as Text or File based on struct definition.
-- Alternative conventions for grouping parts into an array type, e.g. `field[0]` notation.
-- Renaming fields; mapping part field names to alternative struct field names.
-- Treating Text fields as binary.
+- [Pull request to add this to actix-multipart](https://github.com/actix/actix-web/pull/2883)
+- [Discussion thread in actix-web](https://github.com/actix/actix-web/issues/2849)
