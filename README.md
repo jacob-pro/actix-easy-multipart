@@ -17,7 +17,7 @@ use actix_easy_multipart::extractor::MultipartForm;
 struct Upload {
     description: Option<Text<String>>,
     timestamp: Text<i64>,
-    #[multipart(rename="image_set[]")
+    #[multipart(rename="image_set[]")]
     image_set: Vec<Tempfile>,
 }
 
