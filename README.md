@@ -10,8 +10,9 @@ Typed multipart form extractor for [actix-web](https://github.com/actix/actix-we
 
 ```rust
 use actix_web::Responder;
-use actix_easy_multipart::{File, FromMultipart};
-use actix_easy_multipart::extractor::MultipartForm;
+use actix_easy_multipart::tempfile::Tempfile;
+use actix_easy_multipart::text::Text;
+use actix_easy_multipart::MultipartForm;
 
 #[derive(MultipartForm)]
 struct Upload {
