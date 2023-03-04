@@ -6,6 +6,17 @@
 
 Typed multipart form extractor for [actix-web](https://github.com/actix/actix-web).
 
+
+> #### ⚠ Deprecation notice
+> This functionality has been now been [merged](https://github.com/actix/actix-web/pull/2883) into the official
+> `actix-multipart` crate (as of version `0.6.0`). 
+> 
+> Please use the `actix-multipart` module instead, read the documentation 
+> [here](https://docs.rs/actix-multipart/latest/actix_multipart/form/index.html). 
+> 
+> This repository will no longer be maintained.
+
+
 ## Example
 
 ```rust
